@@ -24,14 +24,6 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     )
 
     parser.add_argument(
-        "-f",
-        "--format",
-        choices=sorted(config.SUPPORTED_FORMATS),
-        default=config.OUTPUT_FORMAT,
-        help="Format of the exported video.",
-    )
-
-    parser.add_argument(
         "-r",
         "--resolution",
         type=parse_resolution,
@@ -109,6 +101,22 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         "--assets",
         type=existing_directory,
         help="The path to the folder containing theme assets (The files located inside of 3a981f5cb2739137).",
+    )
+
+    parser.add_argument(
+        "-f",
+        "--format",
+        choices=sorted(config.SUPPORTED_FORMATS),
+        default=config.OUTPUT_FORMAT,
+        help="Format of the exported video.",
+    )
+
+    parser.add_argument(
+        "-out",
+        "--output",
+        type=Path,
+        default=Path("final_output"),
+        help="Output video filename (default: final_output)",
     )
 
     parser.set_defaults(
@@ -204,44 +212,58 @@ def export_video(args: argparse.Namespace) -> int:
         height=args.resolution[1],
     )
 
-    driver = browser_service.create_driver()
+    driver = None
 
-    driver.get(args.url)
+    try:
+        driver = browser_service.create_driver()
 
-    browser_service.set_viewport_size(
-        driver, config.WIDTH, config.HEIGHT
-    )
+        driver.get(args.url)
 
-    browser_service.enable_flash(driver)
+        browser_service.set_viewport_size(
+            driver,
+            args.resolution[0],
+            args.resolution[1],
+        )
 
-    browser_service.inject_dom(driver, config.TEMPLATE_HTML_PATH, {
-        "PLAYER_WIDTH": args.resolution[0],
-        "PLAYER_HEIGHT": args.resolution[1],
-        "PLAYER_SWF_URL": args.swf_url,
-        "IS_WIDE": int(args.is_wide),
-        "API_SERVER": args.api_url,
-        "STORE_PATH": args.store_path,
-        "CLIENT_THEME_PATH": args.client_theme_path,
-        "MOVIE_ID": args.movie_id,
-        "MOVIE_XML": str(args.movie_xml),
-    })
-    
-    await_started(driver)
+        browser_service.enable_flash(driver)
 
-    # Render video
-    renderer = Renderer(
-        driver=driver,
-        encoder=encoder,
-    )
+        browser_service.inject_dom(driver, config.TEMPLATE_HTML_PATH, {
+            "PLAYER_WIDTH": args.resolution[0],
+            "PLAYER_HEIGHT": args.resolution[1],
+            "PLAYER_SWF_URL": args.swf_url,
+            "IS_WIDE": int(args.is_wide),
+            "API_SERVER": args.api_url,
+            "STORE_PATH": args.store_path,
+            "CLIENT_THEME_PATH": args.client_theme_path,
+            "MOVIE_ID": args.movie_id,
+            "MOVIE_XML": str(args.movie_xml),
+        })
 
-    # Render the video and process audio
-    renderer.render()
-    timeline = timeline_builder.build()
-    audio = audio_processor.process(timeline, renderer.duration_frames)
-    muxer.mux(
-        video_file=f"output.{args.format}",
-        audio_file=audio,
-        output_file=f"final_output.{args.format}",
-    )
+        await_started(driver)
 
+        # Render video
+        renderer = Renderer(
+            driver=driver,
+            encoder=encoder,
+        )
+
+        renderer.render()
+
+        timeline = timeline_builder.build()
+        audio = audio_processor.process(
+            timeline,
+            renderer.duration_frames,
+        )
+
+        muxer.mux(
+            video_file=Path(f"output.{args.format}"),
+            audio_file=audio,
+            output_file=Path(f"{args.output}.{args.format}"),
+        )
+
+    finally:
+        if driver is not None:
+            driver.quit()
+
+        browser_service.stop_display()
     return 0
