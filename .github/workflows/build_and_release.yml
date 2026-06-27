@@ -44,6 +44,23 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Install 7-Zip (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          choco install 7zip -y
+
+      - name: Install 7-Zip (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y p7zip-full
+
+      - name: Install 7-Zip (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install p7zip
+
       - name: Download runtime dependencies
         run: |
           python scripts/download_dependencies.py

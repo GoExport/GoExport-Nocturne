@@ -216,7 +216,7 @@ def export_video(args: argparse.Namespace) -> int:
         "PLAYER_WIDTH": args.resolution[0],
         "PLAYER_HEIGHT": args.resolution[1],
         "PLAYER_SWF_URL": args.swf_url,
-        "IS_WIDE": str(args.is_wide).lower(),
+        "IS_WIDE": int(args.is_wide),
         "API_SERVER": args.api_url,
         "STORE_PATH": args.store_path,
         "CLIENT_THEME_PATH": args.client_theme_path,

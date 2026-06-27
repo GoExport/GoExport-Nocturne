@@ -167,6 +167,12 @@ def extract_zip(
     with zipfile.ZipFile(archive) as zip_file:
         zip_file.extractall(destination)
 
+import platform
+import shutil
+import subprocess
+from pathlib import Path
+
+
 def extract_7z(
     archive: Path,
     destination: Path,
@@ -175,8 +181,36 @@ def extract_7z(
         f"[cyan]Extracting[/cyan] {archive.name}"
     )
 
-    with py7zr.SevenZipFile(archive) as seven_zip:
-        seven_zip.extractall(destination)
+    seven_zip = (
+        shutil.which("7zz")
+        or shutil.which("7z")
+        or shutil.which("7za")
+    )
+
+    if seven_zip is None and platform.system() == "Windows":
+        for path in (
+            Path(r"C:\Program Files\7-Zip\7z.exe"),
+            Path(r"C:\Program Files (x86)\7-Zip\7z.exe"),
+        ):
+            if path.exists():
+                seven_zip = str(path)
+                break
+
+    if seven_zip is None:
+        raise RuntimeError(
+            "7-Zip executable not found."
+        )
+
+    subprocess.run(
+        [
+            seven_zip,
+            "x",
+            str(archive),
+            f"-o{destination}",
+            "-y",
+        ],
+        check=True,
+    )
 
 def extract_tar(
     archive: Path,
@@ -389,7 +423,7 @@ def install_flash(temp_dir: Path) -> None:
             print(path.relative_to(temp_dir))
 
         plugin = next(
-            temp_dir.rglob("pepflashplayer*.dll")
+            temp_dir.rglob("flash64/pepflashplayer*.dll")
         )
 
         shutil.copy2(

@@ -28,7 +28,6 @@ class BrowserService:
         options = Options()
 
         options.binary_location = str(self.chrome_path)
-        print(f"Using Chrome binary at: {self.chrome_path}")
 
         options.add_argument("--high-dpi-support=1")
         options.add_argument("--force-device-scale-factor=1")
@@ -36,16 +35,16 @@ class BrowserService:
         options.add_argument("--disable-infobars")
         options.add_argument("--disable-bookmarks-bar")
 
-        if config.SYSTEM == "Linux":
-            options.add_argument("--no-sandbox")
-
         options.add_argument(
-            f"--ppapi-flash-path={self.flash_path}"
+            f"--ppapi-flash-path={str(self.flash_path)}"
         )
 
         options.add_argument(
             f"--ppapi-flash-version={self.flash_version}"
         )
+
+        if config.SYSTEM == "Linux":
+            options.add_argument("--no-sandbox")
 
         options.add_experimental_option(
             "excludeSwitches",
