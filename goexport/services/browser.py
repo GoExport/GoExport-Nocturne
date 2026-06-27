@@ -15,6 +15,9 @@ logger = logging.getLogger(__name__)
 
 from goexport import config
 
+THRESHOLD_WIDTH = 980
+NARROW_TABS = 11
+WIDE_TABS = 19
 
 class BrowserService:
     def __init__(
@@ -32,6 +35,7 @@ class BrowserService:
         self.flash_version = flash_version
         self.width = width
         self.height = height
+        self.display = None
 
     def create_driver(self):
         self.start_display()
@@ -151,9 +155,25 @@ class BrowserService:
             + urllib.parse.quote(current_url)
         )
 
+        # Give the settings page a moment to render.
+        time.sleep(0.5)
+        
+        width = driver.execute_script("""
+            return window.innerWidth;
+        """)
+
+        is_narrow = width < THRESHOLD_WIDTH
+
+        if is_narrow:
+            logger.info("Detected narrow toolbar layout.")
+            tab_count = NARROW_TABS
+        else:
+            logger.info("Detected wide toolbar layout.")
+            tab_count = WIDE_TABS
+
         actions = ActionChains(driver)
 
-        for _ in range(19):
+        for _ in range(tab_count):
             actions.send_keys(Keys.TAB).perform()
             time.sleep(0.05)
 
@@ -161,5 +181,4 @@ class BrowserService:
         actions.send_keys(Keys.ARROW_DOWN).perform()
         actions.send_keys(Keys.ENTER).perform()
 
-        driver.back()
-        driver.refresh()
+        driver.get(current_url)
