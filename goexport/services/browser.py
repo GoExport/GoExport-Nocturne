@@ -2,6 +2,8 @@ from pathlib import Path
 import urllib.parse
 import time
 
+from pyvirtualdisplay import Display
+
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
@@ -25,6 +27,7 @@ class BrowserService:
         self.flash_version = flash_version
 
     def create_driver(self):
+        self.start_display()
         options = Options()
 
         options.binary_location = str(self.chrome_path)
@@ -55,6 +58,17 @@ class BrowserService:
             service=Service(str(self.chromedriver_path)),
             options=options,
         )
+
+    def start_display(self):
+        if config.SYSTEM != "Linux":
+            return
+
+        self.display = Display(
+            visible=False,
+            size=(config.WIDTH, config.HEIGHT),
+            color_depth=24,
+        )
+        self.display.start()
 
     @staticmethod
     def set_viewport_size(driver, width, height):
