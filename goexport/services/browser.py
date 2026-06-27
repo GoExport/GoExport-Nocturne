@@ -20,11 +20,15 @@ class BrowserService:
         chromedriver_path: Path,
         flash_path: Path,
         flash_version: str,
+        width: int = config.WIDTH,
+        height: int = config.HEIGHT,
     ):
         self.chrome_path = chrome_path
         self.chromedriver_path = chromedriver_path
         self.flash_path = flash_path
         self.flash_version = flash_version
+        self.width = width
+        self.height = height
 
     def create_driver(self):
         self.start_display()
@@ -65,7 +69,7 @@ class BrowserService:
 
         self.display = Display(
             visible=False,
-            size=(config.WIDTH, config.HEIGHT),
+            size=(self.width, self.height),
             color_depth=24,
         )
         self.display.start()

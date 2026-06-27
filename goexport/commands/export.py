@@ -200,6 +200,8 @@ def export_video(args: argparse.Namespace) -> int:
         chromedriver_path=config.CHROMEDRIVER_PATH,
         flash_path=config.FLASH_PLUGIN_PATH,
         flash_version=config.FLASH_PLUGIN_VERSION,
+        width=args.resolution[0],
+        height=args.resolution[1],
     )
 
     driver = browser_service.create_driver()
