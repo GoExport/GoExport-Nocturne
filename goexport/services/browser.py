@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 import urllib.parse
 import time
@@ -9,6 +10,8 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
+
+logger = logging.getLogger(__name__)
 
 from goexport import config
 
@@ -67,12 +70,28 @@ class BrowserService:
         if config.SYSTEM != "Linux":
             return
 
-        self.display = Display(
-            visible=False,
-            size=(self.width, self.height),
-            color_depth=24,
-        )
-        self.display.start()
+        try:
+            self.display = Display(
+                visible=False,
+                size=(self.width, self.height),
+                color_depth=24,
+            )
+            self.display.start()
+
+            logger.info("Started virtual display.")
+
+        except Exception as e:
+            self.display = None
+            logger.warning(
+                "Could not start virtual display (%s). "
+                "Falling back to the current display.",
+                e,
+            )
+
+    def stop_display(self):
+        if self.display is not None:
+            self.display.stop()
+            self.display = None
 
     @staticmethod
     def set_viewport_size(driver, width, height):

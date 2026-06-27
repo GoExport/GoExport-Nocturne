@@ -40,8 +40,6 @@ class FFmpegVideoEncoder:
         self.process.stdin.close()
         self.process.wait()
 
-
-
 class FFmpegAudioEncoder:
     def __init__(
         self,
@@ -168,3 +166,7 @@ class FFmpegMuxer:
             ],
             check=True,
         )
+
+        # Clean up temporary files
+        video_file.unlink(missing_ok=True)
+        audio_file.unlink(missing_ok=True)
