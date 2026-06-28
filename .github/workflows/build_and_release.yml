@@ -155,12 +155,6 @@ jobs:
         with:
           name: GoExport-Nocturne-macos-x64
 
-      - name: Move release archives
-        run: |
-          mv GoExport-Nocturne-windows-x64/GoExport-Nocturne-windows-x64.zip .
-          mv GoExport-Nocturne-linux-x64/GoExport-Nocturne-linux-x64.tar.gz .
-          mv GoExport-Nocturne-macos-x64/GoExport-Nocturne-macos-x64.tar.gz .
-
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
