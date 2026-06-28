@@ -171,6 +171,18 @@ def entry(args: argparse.Namespace) -> int:
 
 
 def export_video(args: argparse.Namespace) -> int:
+    # Determine the final output file path
+    output_path = Path(args.output)
+    
+    # If output doesn't have the correct extension, add it
+    if output_path.suffix.lower() != f".{args.format}":
+        final_output_path = Path(f"{output_path}.{args.format}")
+    else:
+        final_output_path = output_path
+    
+    # Create parent directories if they don't exist
+    final_output_path.parent.mkdir(parents=True, exist_ok=True)
+
     # Start the video encoder
     encoder = FFmpegVideoEncoder(
         ffmpeg_path=config.FFMPEG_PATH,
@@ -258,7 +270,7 @@ def export_video(args: argparse.Namespace) -> int:
         muxer.mux(
             video_file=Path(f"output.{args.format}"),
             audio_file=audio,
-            output_file=Path(f"{args.output}.{args.format}"),
+            output_file=final_output_path,
         )
 
     finally:
