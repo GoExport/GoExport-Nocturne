@@ -20,6 +20,19 @@ NARROW_TABS = 11
 WIDE_TABS = 19
 
 class BrowserService:
+    VIRTUAL_RENDERER_KEYWORDS = (
+        "virtual",
+        "vmware",
+        "virtualbox",
+        "vbox",
+        "qxl",
+        "virtio",
+        "parallels",
+        "swiftshader",
+        "llvmpipe",
+        "basic render driver",
+    )
+
     def __init__(
         self,
         chrome_path: Path,
@@ -28,6 +41,8 @@ class BrowserService:
         flash_version: str,
         width: int = config.WIDTH,
         height: int = config.HEIGHT,
+        check_screen_resolution: bool = True,
+        check_frame_resolution: bool = True,
     ):
         self.chrome_path = chrome_path
         self.chromedriver_path = chromedriver_path
@@ -36,6 +51,10 @@ class BrowserService:
         self.width = width
         self.height = height
         self.display = None
+        self.driver = None
+        self.check_screen_resolution = check_screen_resolution
+        self.check_frame_resolution = check_frame_resolution
+        self._virtual_display_logged = False
 
     def create_driver(self):
         self.start_display()
@@ -48,7 +67,11 @@ class BrowserService:
         options.add_argument("--allow-running-insecure-content")
         options.add_argument("--disable-infobars")
         options.add_argument("--disable-bookmarks-bar")
-
+        options.add_argument("--disable-renderer-backgrounding")
+        options.add_argument("--disable-background-timer-throttling")
+        options.add_argument("--disable-backgrounding-occluded-windows")
+        options.add_argument("--disable-features=CalculateNativeWinOcclusion")
+        
         options.add_argument(
             f"--ppapi-flash-path={str(self.flash_path)}"
         )
@@ -65,10 +88,12 @@ class BrowserService:
             ["enable-automation"]
         )
 
-        return webdriver.Chrome(
+        self.driver = webdriver.Chrome(
             service=Service(str(self.chromedriver_path)),
             options=options,
         )
+
+        return self.driver
 
     def start_display(self):
         if config.SYSTEM != "Linux":
@@ -122,6 +147,138 @@ class BrowserService:
             width + extra_width,
             height + extra_height,
         )
+
+    @staticmethod
+    def _get_viewport_size(driver):
+        return driver.execute_script("""
+            return {
+                width: window.innerWidth,
+                height: window.innerHeight
+            };
+        """)
+
+    @staticmethod
+    def _get_display_metrics(driver):
+        return driver.execute_script("""
+            return {
+                screenWidth: window.screen.width,
+                screenHeight: window.screen.height,
+                availWidth: window.screen.availWidth,
+                availHeight: window.screen.availHeight,
+                devicePixelRatio: window.devicePixelRatio
+            };
+        """)
+
+    @staticmethod
+    def _get_renderer_signature(driver):
+        return driver.execute_script("""
+            try {
+                const canvas = document.createElement('canvas');
+                const gl = canvas.getContext('webgl')
+                    || canvas.getContext('experimental-webgl');
+
+                if (!gl) {
+                    return '';
+                }
+
+                const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+                const renderer = debugInfo
+                    ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
+                    : gl.getParameter(gl.RENDERER);
+                const vendor = debugInfo
+                    ? gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL)
+                    : gl.getParameter(gl.VENDOR);
+
+                return `${vendor || ''} ${renderer || ''}`.trim();
+            } catch (e) {
+                return '';
+            }
+        """)
+
+    def _has_virtual_display_driver(self, driver):
+        if self.display is not None:
+            if not self._virtual_display_logged:
+                logger.info(
+                    "Skipping screen-resolution check because an internal virtual display is active."
+                )
+                self._virtual_display_logged = True
+            return True
+
+        signature = self._get_renderer_signature(driver)
+
+        if not signature:
+            return False
+
+        lowered = signature.lower()
+
+        for keyword in self.VIRTUAL_RENDERER_KEYWORDS:
+            if keyword in lowered:
+                if not self._virtual_display_logged:
+                    logger.info(
+                        "Skipping screen-resolution check due to detected virtual display driver '%s'.",
+                        signature,
+                    )
+                    self._virtual_display_logged = True
+                return True
+
+        return False
+
+    def validate_screen_resolution(self, driver):
+        if not self.check_screen_resolution:
+            return
+
+        if self._has_virtual_display_driver(driver):
+            return
+
+        metrics = self._get_display_metrics(driver)
+
+        screen_width = max(
+            int(metrics["screenWidth"]),
+            int(metrics["availWidth"]),
+        )
+        screen_height = max(
+            int(metrics["screenHeight"]),
+            int(metrics["availHeight"]),
+        )
+
+        if self.width > screen_width or self.height > screen_height:
+            raise RuntimeError(
+                "Selected resolution "
+                f"{self.width}x{self.height} exceeds display size "
+                f"{screen_width}x{screen_height}. "
+                "Use --skip-screen-resolution-check to bypass this validation."
+            )
+
+    def assert_full_resolution(self):
+        if not self.check_frame_resolution:
+            return
+
+        if self.driver is None:
+            raise RuntimeError(
+                "Cannot validate frame resolution before the browser is initialized."
+            )
+
+        viewport = self._get_viewport_size(self.driver)
+
+        if (
+            int(viewport["width"]) == self.width
+            and int(viewport["height"]) == self.height
+        ):
+            return
+
+        self.set_viewport_size(self.driver, self.width, self.height)
+        viewport = self._get_viewport_size(self.driver)
+
+        if (
+            int(viewport["width"]) != self.width
+            or int(viewport["height"]) != self.height
+        ):
+            raise RuntimeError(
+                "Viewport is not at the configured resolution before frame capture. "
+                f"Expected {self.width}x{self.height}, got "
+                f"{int(viewport['width'])}x{int(viewport['height'])}. "
+                "Use --skip-frame-resolution-check to bypass this validation."
+            )
 
     @staticmethod
     def inject_dom(

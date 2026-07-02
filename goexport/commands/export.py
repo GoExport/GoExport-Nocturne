@@ -35,6 +35,20 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     )
 
     parser.add_argument(
+        "--skip-screen-resolution-check",
+        action="store_false",
+        dest="check_screen_resolution",
+        help="Skip validating that selected resolution fits the display.",
+    )
+
+    parser.add_argument(
+        "--skip-frame-resolution-check",
+        action="store_false",
+        dest="check_frame_resolution",
+        help="Skip validating viewport resolution before each captured frame.",
+    )
+
+    parser.add_argument(
         "--no-wide",
         action="store_false",
         dest="is_wide",
@@ -83,6 +97,12 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     )
 
     parser.add_argument(
+        "-uid",
+        "--user-id",
+        help="The ID of the user associated with the movie.",
+    )
+
+    parser.add_argument(
         "-xml",
         "--movie-xml",
         type=existing_file,
@@ -122,6 +142,8 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     parser.set_defaults(
         func=entry,
         is_wide=True,
+        check_screen_resolution=True,
+        check_frame_resolution=True,
     )
 
 def parse_resolution(value: str) -> tuple[int, int]:
@@ -222,6 +244,8 @@ def export_video(args: argparse.Namespace) -> int:
         flash_version=config.FLASH_PLUGIN_VERSION,
         width=args.resolution[0],
         height=args.resolution[1],
+        check_screen_resolution=args.check_screen_resolution,
+        check_frame_resolution=args.check_frame_resolution,
     )
 
     driver = None
@@ -230,6 +254,8 @@ def export_video(args: argparse.Namespace) -> int:
         driver = browser_service.create_driver()
 
         driver.get(args.url)
+
+        browser_service.validate_screen_resolution(driver)
 
         browser_service.set_viewport_size(
             driver,
@@ -257,6 +283,7 @@ def export_video(args: argparse.Namespace) -> int:
         renderer = Renderer(
             driver=driver,
             encoder=encoder,
+            resolution_guard=browser_service.assert_full_resolution,
         )
 
         renderer.render()

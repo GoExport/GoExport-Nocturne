@@ -1,4 +1,5 @@
 import logging
+from typing import Callable
 
 from goexport import config
 
@@ -9,9 +10,11 @@ class Renderer:
         self,
         driver,
         encoder,
+        resolution_guard: Callable[[], None] | None = None,
     ):
         self.driver = driver
         self.encoder = encoder
+        self.resolution_guard = resolution_guard
         self.duration_frames = 0
 
     def render(self):
@@ -67,6 +70,9 @@ class Renderer:
             self.driver.execute_script(
                 f"player.seekFrame({frame})"
             )
+
+            if self.resolution_guard is not None:
+                self.resolution_guard()
 
             logger.info(
                 f"Rendering frame {frame}/{frame_count} ({(frame/frame_count)*100:.2f}%)"
