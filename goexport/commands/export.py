@@ -1,9 +1,14 @@
 import argparse
 import logging
-from math import gcd
 from pathlib import Path
 
 from goexport import config
+from goexport.helpers import (
+    existing_directory,
+    existing_file,
+    parse_resolution,
+    resolve_output_path,
+)
 
 from goexport.services.asset_resolver import AssetResolver
 from goexport.services.browser import BrowserService
@@ -150,62 +155,16 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         check_frame_resolution=True,
     )
 
-def parse_resolution(value: str) -> tuple[int, int]:
-    try:
-        width, height = map(int, value.lower().split("x"))
-
-        if width <= 0 or height <= 0:
-            raise ValueError
-
-        return width, height
-
-    except ValueError:
-        raise argparse.ArgumentTypeError(
-            f"Resolution must be in the format WIDTHxHEIGHT "
-            f"(e.g., 1920x1080), got '{value}'."
-        )
-
-def existing_file(path: str) -> Path:
-    file_path = Path(path)
-
-    if not file_path.is_file():
-        raise argparse.ArgumentTypeError(f"'{path}' does not exist or is not a file.")
-
-    return file_path
-
-def existing_directory(path: str) -> Path:
-    dir_path = Path(path)
-
-    if not dir_path.is_dir():
-        raise argparse.ArgumentTypeError(f"'{path}' does not exist or is not a directory.")
-
-    return dir_path
-
-def calculate_aspect_ratio(width: int, height: int) -> tuple[int, int]:
-    common_divisor = gcd(width, height)
-
-    return (
-        width // common_divisor,
-        height // common_divisor,
-    )
-
 
 def entry(args: argparse.Namespace) -> int:
     return export_video(args)
 
 
 def export_video(args: argparse.Namespace) -> int:
-    # Determine the final output file path
-    output_path = Path(args.output)
-    
-    # If output doesn't have the correct extension, add it
-    if output_path.suffix.lower() != f".{args.format}":
-        final_output_path = Path(f"{output_path}.{args.format}")
-    else:
-        final_output_path = output_path
-    
-    # Create parent directories if they don't exist
-    final_output_path.parent.mkdir(parents=True, exist_ok=True)
+    final_output_path = resolve_output_path(
+        Path(args.output),
+        args.format,
+    )
 
     # Start the video encoder
     encoder = FFmpegVideoEncoder(
