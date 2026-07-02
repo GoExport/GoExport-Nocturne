@@ -94,6 +94,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         "-id",
         "--movie-id",
         help="The ID of the movie to be exported.",
+        required=True
     )
 
     parser.add_argument(
@@ -107,6 +108,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         "--movie-xml",
         type=existing_file,
         help="The path to the movie XML file.",
+        required=True
     )
 
     parser.add_argument(
@@ -114,6 +116,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         "--ugc-path",
         type=existing_directory,
         help="The path to the folder containing UGC assets.",
+        required=True
     )
 
     parser.add_argument(
@@ -121,6 +124,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         "--assets",
         type=existing_directory,
         help="The path to the folder containing theme assets (The files located inside of 3a981f5cb2739137).",
+        required=True
     )
 
     parser.add_argument(
@@ -187,8 +191,6 @@ def calculate_aspect_ratio(width: int, height: int) -> tuple[int, int]:
 
 
 def entry(args: argparse.Namespace) -> int:
-    width, height = args.resolution
-
     return export_video(args)
 
 
@@ -274,6 +276,7 @@ def export_video(args: argparse.Namespace) -> int:
             "STORE_PATH": args.store_path,
             "CLIENT_THEME_PATH": args.client_theme_path,
             "MOVIE_ID": args.movie_id,
+            "USER_ID": args.user_id,
             "MOVIE_XML": str(args.movie_xml),
         })
 
