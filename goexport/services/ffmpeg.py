@@ -59,6 +59,32 @@ class FFmpegAudioEncoder:
         output_file: Path,
         frame_count: int,
     ) -> None:
+        movie_duration = frame_count / self.fps
+
+        if not clips:
+            # Keep muxing stable by emitting a silent track when no clips exist.
+            command = [
+                str(self.ffmpeg_path),
+                "-y",
+                "-f", "lavfi",
+                "-i", "anullsrc=r=44100:cl=stereo",
+                "-t", f"{max(movie_duration, 0):.6f}",
+                "-c:a", "pcm_s16le",
+                str(output_file),
+            ]
+
+            logger.info(
+                "No audio clips found; generating silent track (%s seconds)",
+                f"{max(movie_duration, 0):.6f}",
+            )
+            logger.info("FFmpeg command: %s", " ".join(command))
+
+            subprocess.run(
+                command,
+                check=True,
+            )
+            return
+
         command = [
             str(self.ffmpeg_path),
             "-y",
@@ -66,7 +92,6 @@ class FFmpegAudioEncoder:
 
         filters = []
         mix_inputs = []
-        movie_duration = frame_count / self.fps
 
         offset_ms = round(
             self.audio_offset_frames * 1000 / self.fps
