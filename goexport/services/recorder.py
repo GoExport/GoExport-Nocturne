@@ -6,7 +6,7 @@ from selenium.webdriver.remote.webdriver import WebDriver
 
 from goexport import config
 from goexport.services.browser import BrowserService
-from goexport.services.flash import await_started, await_stopped
+from goexport.services.flash import await_player_ready, await_started, await_stopped
 
 logger = logging.getLogger(__name__)
 
@@ -49,11 +49,6 @@ class RecordingService:
             "USER_ID": self.args.user_id,
         }
 
-    # @staticmethod
-    # def _prepare_player(driver: WebDriver) -> None:
-    #     driver.execute_script("player.pause();")
-    #     driver.execute_script("player.seekFrame(1);")
-
     def run(self) -> int:
         recorder_config = self._create_recording_config()
         recorder = Recorder(recorder_config)
@@ -78,9 +73,11 @@ class RecordingService:
 
             recorder_config.window_title = f"{driver.title} - Chromium"
 
-            await_started(driver)
+            await_player_ready(driver)
 
-            # self._prepare_player(driver)
+            driver.execute_script("player.pause();")
+
+            await_started(driver)
 
             recorder.start()
 
