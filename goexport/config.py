@@ -2,7 +2,7 @@ from pathlib import Path
 import platform
 import sys
 
-APP_NAME = "GoExport Nocturne"
+APP_NAME = "GoExport"
 VERSION = "1.0.0"
 
 SUPPORTED_FORMATS = {

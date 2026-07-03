@@ -56,7 +56,7 @@ class BrowserService:
         self.check_frame_resolution = check_frame_resolution
         self._virtual_display_logged = False
 
-    def create_driver(self):
+    def create_driver(self, kiosk: bool = False):
         self.start_display()
         options = Options()
 
@@ -71,6 +71,9 @@ class BrowserService:
         options.add_argument("--disable-background-timer-throttling")
         options.add_argument("--disable-backgrounding-occluded-windows")
         options.add_argument("--disable-features=CalculateNativeWinOcclusion")
+
+        if kiosk:
+            options.add_argument("--kiosk")
         
         options.add_argument(
             f"--ppapi-flash-path={str(self.flash_path)}"

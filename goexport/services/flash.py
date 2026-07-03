@@ -24,11 +24,6 @@ def await_started(driver, timeout_minutes=30):
 
 
 def await_stopped(driver, timeout_minutes=60):
-    """
-    Block until the Flash player sends the ``"stop"`` FSCommand, which sets
-    ``window.stopRecord = 1``.  Raises ``TimeoutError`` if the player does
-    not signal completion within *timeout_minutes*.
-    """
     timeout_seconds = (
         timeout_minutes * 60
         if timeout_minutes > 0
