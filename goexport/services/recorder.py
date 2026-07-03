@@ -51,7 +51,6 @@ class RecordingService:
 
     def run(self) -> int:
         recorder_config = self._create_recording_config()
-        recorder = Recorder(recorder_config)
         browser_service = self._create_browser_service()
 
         driver = None
@@ -72,6 +71,7 @@ class RecordingService:
             )
 
             recorder_config.window_title = f"{driver.title} - Chromium"
+            recorder = Recorder(recorder_config)
 
             await_player_ready(driver)
 
