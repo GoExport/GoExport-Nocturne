@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 def register(subparsers: argparse._SubParsersAction) -> None:
     parser = subparsers.add_parser(
         "export",
-        help="Export a GoAnimate video.",
+        help="Export a GoAnimate video with frame-to-frame pipeline.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 
