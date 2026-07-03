@@ -29,4 +29,5 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         required=True,
     )
 
+def entry(args: argparse.Namespace) -> int:
     raise NotImplementedError("The download command is not yet implemented.")
