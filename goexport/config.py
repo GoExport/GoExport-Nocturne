@@ -52,6 +52,8 @@ else:
 
 TEMPLATE_HTML_PATH = RESOURCES_DIR / "template.html"
 
+OUTRO_PATH = RESOURCES_DIR / "outro.mp4"
+
 OUTPUT_FORMAT = "mp4"
 
 IS_WIDE = True

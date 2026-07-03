@@ -21,7 +21,7 @@ class RecordingService:
             output=self.args.output.with_suffix(f".{self.args.format}"),
             crop_width=self.args.resolution[0],
             crop_height=self.args.resolution[1],
-            crop_position="top-left",
+            crop_position="bottom-left",
             overwrite=True,
             fps=config.FPS,
         )
@@ -56,11 +56,13 @@ class RecordingService:
         driver = None
 
         try:
-            driver = browser_service.create_driver(kiosk=True)
+            driver = browser_service.create_driver()
 
             driver.get(self.args.url)
 
             browser_service.validate_screen_resolution(driver)
+
+            browser_service.set_viewport_size(driver, self.args.resolution[0], self.args.resolution[1])
 
             browser_service.enable_flash(driver)
 
