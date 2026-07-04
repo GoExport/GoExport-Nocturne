@@ -56,7 +56,7 @@ class BrowserService:
         self.check_frame_resolution = check_frame_resolution
         self._virtual_display_logged = False
 
-    def create_driver(self, kiosk: bool = False):
+    def create_driver(self):
         self.start_display()
         options = Options()
 
@@ -65,6 +65,7 @@ class BrowserService:
         options.add_argument("--high-dpi-support=1")
         options.add_argument("--force-device-scale-factor=1")
         options.add_argument("--allow-running-insecure-content")
+
         options.add_argument("--disable-infobars")
         options.add_argument("--disable-bookmarks-bar")
         options.add_argument("--disable-renderer-backgrounding")
@@ -72,9 +73,6 @@ class BrowserService:
         options.add_argument("--disable-backgrounding-occluded-windows")
         options.add_argument("--disable-features=CalculateNativeWinOcclusion")
 
-        if kiosk:
-            options.add_argument("--kiosk")
-        
         options.add_argument(
             f"--ppapi-flash-path={str(self.flash_path)}"
         )
