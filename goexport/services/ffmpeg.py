@@ -195,3 +195,64 @@ class FFmpegMuxer:
         # Clean up temporary files
         video_file.unlink(missing_ok=True)
         audio_file.unlink(missing_ok=True)
+
+    def append_outro(
+        self,
+        main_video_file: Path,
+        outro_file: Path,
+        output_file: Path,
+        width: int,
+        height: int,
+    ) -> None:
+        if output_file.suffix.lower() == ".gif":
+            raise ValueError(
+                "Appending an outro with audio is not supported for GIF output. "
+                "Use --no-outro or choose a different output format."
+            )
+
+        if not main_video_file.is_file():
+            raise FileNotFoundError(
+                f"Main video file does not exist: {main_video_file}"
+            )
+
+        if not outro_file.is_file():
+            raise FileNotFoundError(
+                f"Outro video file does not exist: {outro_file}"
+            )
+
+        temp_output_file = output_file.with_name(
+            f"{output_file.stem}.with_outro{output_file.suffix}"
+        )
+
+        filter_complex = (
+            f"[1:v]"
+            f"scale=w={width}:h={height}:force_original_aspect_ratio=decrease,"
+            f"pad=w={width}:h={height}:x=(ow-iw)/2:y=(oh-ih)/2:color=black"
+            f"[outro_v];"
+            f"[0:v][0:a][outro_v][1:a]"
+            f"concat=n=2:v=1:a=1[v][a]"
+        )
+
+        command = [
+            str(self.ffmpeg_path),
+            "-y",
+            "-i", str(main_video_file),
+            "-i", str(outro_file),
+            "-filter_complex", filter_complex,
+            "-map", "[v]",
+            "-map", "[a]",
+            "-c:v", "libx264",
+            "-pix_fmt", "yuv420p",
+            "-c:a", "aac",
+            "-b:a", "192k",
+            str(temp_output_file),
+        ]
+
+        logger.info("FFmpeg command: %s", " ".join(command))
+
+        subprocess.run(
+            command,
+            check=True,
+        )
+
+        temp_output_file.replace(output_file)

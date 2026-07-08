@@ -97,6 +97,19 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         help="Output video filename (default: final_output)",
     )
 
+    parser.add_argument(
+        "--no-outro",
+        action="store_true",
+        help="Do not append an outro video.",
+    )
+
+    parser.add_argument(
+        "--use-outro",
+        type=Path,
+        default=config.OUTRO_PATH,
+        help="Path to an outro video to append after recording.",
+    )
+
     parser.set_defaults(
         func=entry,
         is_wide=True,

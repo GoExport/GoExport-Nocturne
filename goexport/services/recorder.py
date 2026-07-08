@@ -1,11 +1,14 @@
 import argparse
 import logging
+from pathlib import Path
 
 from recap import Recorder, RecordingConfig
 from selenium.webdriver.remote.webdriver import WebDriver
 
 from goexport import config
+from goexport.helpers import resolve_output_path
 from goexport.services.browser import BrowserService
+from goexport.services.ffmpeg import FFmpegMuxer
 from goexport.services.flash import await_player_ready, await_started, await_stopped
 
 logger = logging.getLogger(__name__)
@@ -18,7 +21,7 @@ class RecordingService:
     def _create_recording_config(self) -> RecordingConfig:
         return RecordingConfig(
             ffmpeg=config.FFMPEG_PATH,
-            output=self.args.output.with_suffix(f".{self.args.format}"),
+            output=resolve_output_path(Path(self.args.output), self.args.format),
             crop_width=self.args.resolution[0],
             crop_height=self.args.resolution[1],
             crop_position="bottom-left",
@@ -89,6 +92,15 @@ class RecordingService:
 
             recorder.stop()
             recorder.wait(timeout=30)
+
+            if not self.args.no_outro:
+                FFmpegMuxer(config.FFMPEG_PATH).append_outro(
+                    main_video_file=recorder_config.output,
+                    outro_file=Path(self.args.use_outro),
+                    output_file=recorder_config.output,
+                    width=self.args.resolution[0],
+                    height=self.args.resolution[1],
+                )
 
         finally:
             if driver is not None:

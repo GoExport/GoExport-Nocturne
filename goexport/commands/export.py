@@ -148,6 +148,19 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         help="Output video filename (default: final_output)",
     )
 
+    parser.add_argument(
+        "--no-outro",
+        action="store_true",
+        help="Do not append an outro video.",
+    )
+
+    parser.add_argument(
+        "--use-outro",
+        type=Path,
+        default=config.OUTRO_PATH,
+        help="Path to an outro video to append after export.",
+    )
+
     parser.set_defaults(
         func=entry,
         is_wide=True,
@@ -165,6 +178,7 @@ def export_video(args: argparse.Namespace) -> int:
         Path(args.output),
         args.format,
     )
+    outro_path = Path(args.use_outro)
 
     # Start the video encoder
     encoder = FFmpegVideoEncoder(
@@ -261,6 +275,15 @@ def export_video(args: argparse.Namespace) -> int:
             audio_file=audio,
             output_file=final_output_path,
         )
+
+        if not args.no_outro:
+            muxer.append_outro(
+                main_video_file=final_output_path,
+                outro_file=outro_path,
+                output_file=final_output_path,
+                width=args.resolution[0],
+                height=args.resolution[1],
+            )
 
     finally:
         if driver is not None:
